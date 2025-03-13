@@ -82,16 +82,16 @@ class Pokemon {
     List<Move> moves = [];
     for (var moveData in json['moves']) {
       if (moves.length >= 4) break;
-      moves.add(Move(
-        name: moveData['move']['name'],
-        url: moveData['move']['url'],
-      ));
+      moves.add(
+        Move(name: moveData['move']['name'], url: moveData['move']['url']),
+      );
     }
 
     return Pokemon(
       id: json['id'],
       name: json['name'],
-      imageUrl: json['sprites']['other']['official-artwork']['front_default'] ??
+      imageUrl:
+          json['sprites']['other']['official-artwork']['front_default'] ??
           json['sprites']['front_default'],
       moves: moves,
       hp: stats['hp'] * 2, // Multiply HP for longer battles
@@ -100,21 +100,19 @@ class Pokemon {
     );
   }
 
-  String get formattedName => name.substring(0, 1).toUpperCase() + name.substring(1);
+  String get formattedName =>
+      name.substring(0, 1).toUpperCase() + name.substring(1);
 
-  String get formattedTypes => types.map((type) =>
-  type.substring(0, 1).toUpperCase() + type.substring(1)).join(', ');
+  String get formattedTypes => types
+      .map((type) => type.substring(0, 1).toUpperCase() + type.substring(1))
+      .join(', ');
 }
 
 // Add a TypeEffectiveness class to manage type matchups
 class TypeEffectiveness {
   // Map of attacking type to defending types with effectiveness multipliers
   static const Map<String, Map<String, double>> chart = {
-    'normal': {
-      'rock': 0.5,
-      'ghost': 0,
-      'steel': 0.5,
-    },
+    'normal': {'rock': 0.5, 'ghost': 0, 'steel': 0.5},
     'fire': {
       'fire': 0.5,
       'water': 0.5,
@@ -231,17 +229,8 @@ class TypeEffectiveness {
       'bug': 2,
       'steel': 0.5,
     },
-    'ghost': {
-      'normal': 0,
-      'psychic': 2,
-      'ghost': 2,
-      'dark': 0.5,
-    },
-    'dragon': {
-      'dragon': 2,
-      'steel': 0.5,
-      'fairy': 0,
-    },
+    'ghost': {'normal': 0, 'psychic': 2, 'ghost': 2, 'dark': 0.5},
+    'dragon': {'dragon': 2, 'steel': 0.5, 'fairy': 0},
     'dark': {
       'fighting': 0.5,
       'psychic': 2,
@@ -269,12 +258,16 @@ class TypeEffectiveness {
   };
 
   // Calculate effectiveness multiplier of an attack type against a defending Pokémon
-  static double getEffectiveness(String attackType, List<String> defenderTypes) {
+  static double getEffectiveness(
+    String attackType,
+    List<String> defenderTypes,
+  ) {
     double multiplier = 1.0;
 
     for (String defenderType in defenderTypes) {
       // If this defender type is in the chart for this attack type
-      if (chart.containsKey(attackType) && chart[attackType]!.containsKey(defenderType)) {
+      if (chart.containsKey(attackType) &&
+          chart[attackType]!.containsKey(defenderType)) {
         multiplier *= chart[attackType]![defenderType]!;
       }
     }
@@ -284,11 +277,14 @@ class TypeEffectiveness {
 
   // Get description of effectiveness based on multiplier
   static String getEffectivenessDescription(double multiplier) {
-    if (multiplier > 1.9) { // Account for rounding errors with 2.0
+    if (multiplier > 1.9) {
+      // Account for rounding errors with 2.0
       return "It's super effective!";
-    } else if (multiplier < 0.1) { // Account for rounding errors with 0.0
+    } else if (multiplier < 0.1) {
+      // Account for rounding errors with 0.0
       return "It has no effect...";
-    } else if (multiplier < 0.9) { // Account for rounding errors with 0.5
+    } else if (multiplier < 0.9) {
+      // Account for rounding errors with 0.5
       return "It's not very effective...";
     } else {
       return "";
@@ -303,10 +299,7 @@ class Move {
   String type = 'normal';
   bool isLoaded = false;
 
-  Move({
-    required this.name,
-    required this.url,
-  });
+  Move({required this.name, required this.url});
 
   String get formattedName => name
       .split('-')
@@ -327,19 +320,19 @@ class PokemonService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return [{
-          'name': data['name'] as String,
-          'url': '$baseUrl/pokemon/${data['id']}',
-        }];
+        return [
+          {
+            'name': data['name'] as String,
+            'url': '$baseUrl/pokemon/${data['id']}',
+          },
+        ];
       }
     } catch (_) {
       // Ignore error if Pokémon not found by exact name
     }
 
     // If no exact match, get a list and filter for names that START WITH the query
-    final response = await http.get(
-      Uri.parse('$baseUrl/pokemon?limit=2000'),
-    );
+    final response = await http.get(Uri.parse('$baseUrl/pokemon?limit=2000'));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -348,10 +341,12 @@ class PokemonService {
       // Filter for Pokémon names that START WITH the query
       return results
           .where((pokemon) => (pokemon['name'] as String).startsWith(query))
-          .map<Map<String, String>>((pokemon) => {
-        'name': pokemon['name'] as String,
-        'url': pokemon['url'] as String,
-      })
+          .map<Map<String, String>>(
+            (pokemon) => {
+              'name': pokemon['name'] as String,
+              'url': pokemon['url'] as String,
+            },
+          )
           .toList();
     } else {
       throw Exception('Failed to search Pokémon');
@@ -359,7 +354,10 @@ class PokemonService {
   }
 
   // Get a list of Pokémon names and URLs (for display in selection screen)
-  Future<List<Map<String, String>>> getPokemonList(int limit, int offset) async {
+  Future<List<Map<String, String>>> getPokemonList(
+    int limit,
+    int offset,
+  ) async {
     final response = await http.get(
       Uri.parse('$baseUrl/pokemon?limit=$limit&offset=$offset'),
     );
@@ -420,9 +418,8 @@ class PokemonProvider with ChangeNotifier {
   // Add a search request token to track the latest search
   int _currentSearchToken = 0;
 
-  List<Map<String, String>> get pokemonList => _searchQuery.isEmpty
-      ? _pokemonList
-      : _filteredPokemonList;
+  List<Map<String, String>> get pokemonList =>
+      _searchQuery.isEmpty ? _pokemonList : _filteredPokemonList;
   bool get isLoading => _isLoading;
   bool get isSearching => _isSearching;
   String get searchQuery => _searchQuery;
@@ -462,9 +459,10 @@ class PokemonProvider with ChangeNotifier {
       if (thisSearchToken == _currentSearchToken) {
         debugPrint('Error searching Pokémon: $e');
         // Fallback to local filtering if API search fails
-        _filteredPokemonList = _pokemonList
-            .where((pokemon) => pokemon['name']!.startsWith(_searchQuery))
-            .toList();
+        _filteredPokemonList =
+            _pokemonList
+                .where((pokemon) => pokemon['name']!.startsWith(_searchQuery))
+                .toList();
       }
     } finally {
       // Only update UI state if this is still the latest search
@@ -490,9 +488,10 @@ class PokemonProvider with ChangeNotifier {
 
       // Re-apply search if there's an active query
       if (_searchQuery.isNotEmpty) {
-        _filteredPokemonList = _pokemonList
-            .where((pokemon) => pokemon['name']!.contains(_searchQuery))
-            .toList();
+        _filteredPokemonList =
+            _pokemonList
+                .where((pokemon) => pokemon['name']!.contains(_searchQuery))
+                .toList();
       }
 
       _offset += _limit;
@@ -528,15 +527,16 @@ class PokemonProvider with ChangeNotifier {
 
   Pokemon _clonePokemon(Pokemon original) {
     // Create a new list of moves that copies from the original
-    List<Move> clonedMoves = original.moves.map((move) =>
-    Move(
-      name: move.name,
-      url: move.url,
-    )
-      ..power = move.power
-      ..type = move.type
-      ..isLoaded = move.isLoaded
-    ).toList();
+    List<Move> clonedMoves =
+        original.moves
+            .map(
+              (move) =>
+                  Move(name: move.name, url: move.url)
+                    ..power = move.power
+                    ..type = move.type
+                    ..isLoaded = move.isLoaded,
+            )
+            .toList();
 
     // Create a new Pokémon with the same properties but as a separate object
     return Pokemon(
@@ -588,6 +588,12 @@ class BattleProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Set who goes first (from coin flip)
+  void setFirstPlayer(int player) {
+    currentTurn = player;
+    notifyListeners();
+  }
+
   void resetBattle() {
     // Reset HP for all Pokémon
     for (var pokemon in [...player1Pokemon, ...player2Pokemon]) {
@@ -596,7 +602,7 @@ class BattleProvider with ChangeNotifier {
 
     currentPlayer1PokemonIndex = 0;
     currentPlayer2PokemonIndex = 0;
-    currentTurn = 1;
+    // Don't reset currentTurn here - will be set by coin flip
     battleLog = '';
     gameOver = false;
     winner = null;
@@ -613,12 +619,10 @@ class BattleProvider with ChangeNotifier {
     isProcessingMove = true;
     notifyListeners();
 
-    final attacker = currentTurn == 1
-        ? currentPlayer1Pokemon
-        : currentPlayer2Pokemon;
-    final defender = currentTurn == 1
-        ? currentPlayer2Pokemon
-        : currentPlayer1Pokemon;
+    final attacker =
+        currentTurn == 1 ? currentPlayer1Pokemon : currentPlayer2Pokemon;
+    final defender =
+        currentTurn == 1 ? currentPlayer2Pokemon : currentPlayer1Pokemon;
 
     if (attacker == null || defender == null) {
       isProcessingMove = false;
@@ -634,14 +638,20 @@ class BattleProvider with ChangeNotifier {
 
     // Calculate type effectiveness
     final typeEffectiveness = TypeEffectiveness.getEffectiveness(
-        move.type, defender.types);
+      move.type,
+      defender.types,
+    );
 
     // Ensure move power is valid
     final movePower = move.power > 0 ? move.power : 40;
 
     // Calculate damage and ensure it's at least 1
-    int damage = ((movePower * attackStat) / defenseStat * randomFactor *
-        typeEffectiveness).round();
+    int damage =
+        ((movePower * attackStat) /
+                defenseStat *
+                randomFactor *
+                typeEffectiveness)
+            .round();
 
     // If effectiveness is 0, damage is 0
     if (typeEffectiveness == 0) {
@@ -662,13 +672,14 @@ class BattleProvider with ChangeNotifier {
 
     // Add effectiveness message if applicable
     String effectivenessMsg = TypeEffectiveness.getEffectivenessDescription(
-        typeEffectiveness);
+      typeEffectiveness,
+    );
     if (effectivenessMsg.isNotEmpty) {
       battleLog += '$effectivenessMsg\n';
     }
 
     battleLog +=
-    'It dealt $damage damage to ${defender.formattedName}!\n$battleLog';
+        'It dealt $damage damage to ${defender.formattedName}!\n$battleLog';
 
     // Check if defender is fainted
     if (defender.currentHp <= 0) {
@@ -686,8 +697,7 @@ class BattleProvider with ChangeNotifier {
         } else {
           currentPlayer2PokemonIndex++;
           battleLog =
-          'Player 2 sends out ${player2Pokemon[currentPlayer2PokemonIndex]
-              .formattedName}!\n$battleLog';
+              'Player 2 sends out ${player2Pokemon[currentPlayer2PokemonIndex].formattedName}!\n$battleLog';
         }
       } else {
         if (currentPlayer1PokemonIndex >= player1Pokemon.length - 1) {
@@ -697,8 +707,7 @@ class BattleProvider with ChangeNotifier {
         } else {
           currentPlayer1PokemonIndex++;
           battleLog =
-          'Player 1 sends out ${player1Pokemon[currentPlayer1PokemonIndex]
-              .formattedName}!\n$battleLog';
+              'Player 1 sends out ${player1Pokemon[currentPlayer1PokemonIndex].formattedName}!\n$battleLog';
         }
       }
     }
@@ -727,10 +736,7 @@ class HomeScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.pink.shade100,
-              Colors.cyan.shade100,
-            ],
+            colors: [Colors.pink.shade100, Colors.cyan.shade100],
           ),
         ),
         child: SafeArea(
@@ -751,9 +757,7 @@ class HomeScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.pink.shade700,
                   ),
-                ).animate()
-                    .fadeIn(duration: 800.ms)
-                    .scale(delay: 300.ms),
+                ).animate().fadeIn(duration: 800.ms).scale(delay: 300.ms),
                 const SizedBox(height: 10),
                 Text(
                   'Two players, one device!',
@@ -763,26 +767,42 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 60),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PokemonSelectionScreen(player: 1),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    const PokemonSelectionScreen(player: 1),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink.shade500,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 50,
+                          vertical: 15,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pink.shade500,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: const Text('Start Battle', style: TextStyle(fontSize: 18)),
-                ).animate()
+                      child: const Text(
+                        'Start Battle',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    )
+                    .animate()
                     .fadeIn(delay: 500.ms)
                     .slideY(begin: 0.2, end: 0)
-                    .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                    .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+                    .animate(
+                      onPlay: (controller) => controller.repeat(reverse: true),
+                    )
+                    .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.05, 1.05),
+                    ),
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
@@ -794,9 +814,9 @@ class HomeScreen extends StatelessWidget {
                           content: const SingleChildScrollView(
                             child: Text(
                               '1. Each player selects up to 3 Pokémon\n'
-                                  '2. Players take turns using moves\n'
-                                  '3. When a Pokémon faints, the next one is sent out\n'
-                                  '4. The player who defeats all opponent\'s Pokémon wins!',
+                              '2. Players take turns using moves\n'
+                              '3. When a Pokémon faints, the next one is sent out\n'
+                              '4. The player who defeats all opponent\'s Pokémon wins!',
                             ),
                           ),
                           actions: [
@@ -844,7 +864,6 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
   // Add debounce timer for search
   Timer? _searchDebounceTimer;
 
-
   @override
   void initState() {
     super.initState();
@@ -879,12 +898,16 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
     // Don't load more Pokémon when we're in search mode
     if (_isLoadingMore ||
         _searchController.text.isNotEmpty ||
-        Provider.of<PokemonProvider>(context, listen: false).searchQuery.isNotEmpty) {
+        Provider.of<PokemonProvider>(
+          context,
+          listen: false,
+        ).searchQuery.isNotEmpty) {
       return;
     }
 
     // Only load more when close to the bottom and not searching
-    if (_scrollController.position.pixels > _scrollController.position.maxScrollExtent - 500) {
+    if (_scrollController.position.pixels >
+        _scrollController.position.maxScrollExtent - 500) {
       _loadMorePokemon();
     }
   }
@@ -896,7 +919,10 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
       _isLoadingMore = true;
     });
 
-    await Provider.of<PokemonProvider>(context, listen: false).fetchPokemonList();
+    await Provider.of<PokemonProvider>(
+      context,
+      listen: false,
+    ).fetchPokemonList();
 
     if (mounted) {
       setState(() {
@@ -911,9 +937,12 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
       appBar: AppBar(
         title: Text(
           'Player ${widget.player} - Select Pokémon (${selectedPokemon.length}/$maxSelection)',
-          style: TextStyle(color: widget.player == 1 ? Colors.pink : Colors.cyan),
+          style: TextStyle(
+            color: widget.player == 1 ? Colors.pink : Colors.cyan,
+          ),
         ),
-        backgroundColor: widget.player == 1 ? Colors.pink.shade100 : Colors.cyan.shade100,
+        backgroundColor:
+            widget.player == 1 ? Colors.pink.shade100 : Colors.cyan.shade100,
         actions: [
           // Add a clear search button in the app bar
           if (_searchController.text.isNotEmpty)
@@ -921,7 +950,10 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
               icon: const Icon(Icons.clear_all),
               onPressed: () {
                 _searchController.clear();
-                Provider.of<PokemonProvider>(context, listen: false).setSearchQuery('');
+                Provider.of<PokemonProvider>(
+                  context,
+                  listen: false,
+                ).setSearchQuery('');
               },
               tooltip: 'Clear search',
             ),
@@ -935,8 +967,7 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
               _buildSearchBar(),
 
               // Selected Pokémon preview
-              if (selectedPokemon.isNotEmpty)
-                _buildSelectedPokemonPreview(),
+              if (selectedPokemon.isNotEmpty) _buildSelectedPokemonPreview(),
 
               // Pokémon grid
               Expanded(
@@ -952,13 +983,19 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CircularProgressIndicator(
-                              color: widget.player == 1 ? Colors.pink : Colors.cyan,
+                              color:
+                                  widget.player == 1
+                                      ? Colors.pink
+                                      : Colors.cyan,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Searching for "${provider.searchQuery}"...',
                               style: TextStyle(
-                                color: widget.player == 1 ? Colors.pink.shade700 : Colors.cyan.shade700,
+                                color:
+                                    widget.player == 1
+                                        ? Colors.pink.shade700
+                                        : Colors.cyan.shade700,
                               ),
                             ),
                           ],
@@ -972,15 +1009,12 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
               ),
 
               // Continue button
-              SafeArea(
-                child: _buildContinueButton(),
-              ),
+              SafeArea(child: _buildContinueButton()),
             ],
           ),
 
           // Global loading overlay
-          if (isLoading)
-            _buildLoadingOverlay(),
+          if (isLoading) _buildLoadingOverlay(),
         ],
       ),
     );
@@ -993,38 +1027,49 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Search Pokémon',
-          prefixIcon: Provider.of<PokemonProvider>(context).isSearching
-              ? SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: widget.player == 1 ? Colors.pink : Colors.cyan,
-            ),
-          )
-              : Icon(
-            Icons.search,
-            color: widget.player == 1 ? Colors.pink : Colors.cyan,
-          ),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              _searchController.clear();
-              Provider.of<PokemonProvider>(context, listen: false).setSearchQuery('');
-            },
-          )
-              : null,
+          prefixIcon:
+              Provider.of<PokemonProvider>(context).isSearching
+                  ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: widget.player == 1 ? Colors.pink : Colors.cyan,
+                    ),
+                  )
+                  : Icon(
+                    Icons.search,
+                    color: widget.player == 1 ? Colors.pink : Colors.cyan,
+                  ),
+          suffixIcon:
+              _searchController.text.isNotEmpty
+                  ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      Provider.of<PokemonProvider>(
+                        context,
+                        listen: false,
+                      ).setSearchQuery('');
+                    },
+                  )
+                  : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide(
-              color: widget.player == 1 ? Colors.pink.shade200 : Colors.cyan.shade200,
+              color:
+                  widget.player == 1
+                      ? Colors.pink.shade200
+                      : Colors.cyan.shade200,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide(
-              color: widget.player == 1 ? Colors.pink.shade200 : Colors.cyan.shade200,
+              color:
+                  widget.player == 1
+                      ? Colors.pink.shade200
+                      : Colors.cyan.shade200,
             ),
           ),
           focusedBorder: OutlineInputBorder(
@@ -1043,7 +1088,10 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
 
           // Set a new timer to delay the search
           _searchDebounceTimer = Timer(const Duration(milliseconds: 300), () {
-            Provider.of<PokemonProvider>(context, listen: false).setSearchQuery(value);
+            Provider.of<PokemonProvider>(
+              context,
+              listen: false,
+            ).setSearchQuery(value);
           });
         },
       ),
@@ -1056,9 +1104,7 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
       height: selectedPokemon.isEmpty ? 0 : 100,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: widget.player == 1
-            ? Colors.pink.shade50
-            : Colors.cyan.shade50,
+        color: widget.player == 1 ? Colors.pink.shade50 : Colors.cyan.shade50,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.2),
@@ -1082,7 +1128,10 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: widget.player == 1 ? Colors.pink.shade200 : Colors.cyan.shade200
+                      color:
+                          widget.player == 1
+                              ? Colors.pink.shade200
+                              : Colors.cyan.shade200,
                     ),
                   ),
                   child: Column(
@@ -1093,14 +1142,18 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
                         height: 45,
                         width: 50,
                         fit: BoxFit.contain,
-                        placeholder: (context, url) => SizedBox(
-                          height: 50,
-                          width: 50,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: widget.player == 1 ? Colors.pink : Colors.cyan,
-                          ),
-                        ),
+                        placeholder:
+                            (context, url) => SizedBox(
+                              height: 50,
+                              width: 50,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color:
+                                    widget.player == 1
+                                        ? Colors.pink
+                                        : Colors.cyan,
+                              ),
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -1122,7 +1175,11 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
                     child: CircleAvatar(
                       radius: 10,
                       backgroundColor: Colors.red.shade300,
-                      child: const Icon(Icons.close, size: 12, color: Colors.white),
+                      child: const Icon(
+                        Icons.close,
+                        size: 12,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -1146,7 +1203,10 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
           Text(
             'Loading Pokémon...',
             style: TextStyle(
-              color: widget.player == 1 ? Colors.pink.shade700 : Colors.cyan.shade700,
+              color:
+                  widget.player == 1
+                      ? Colors.pink.shade700
+                      : Colors.cyan.shade700,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1161,7 +1221,10 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
         child: Text(
           'No Pokémon found starting with "${provider.searchQuery}"',
           style: TextStyle(
-            color: widget.player == 1 ? Colors.pink.shade700 : Colors.cyan.shade700,
+            color:
+                widget.player == 1
+                    ? Colors.pink.shade700
+                    : Colors.cyan.shade700,
           ),
         ),
       );
@@ -1169,7 +1232,8 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
 
     // Show a footer message for search results
     final bool isSearchActive = provider.searchQuery.isNotEmpty;
-    final int itemCount = provider.pokemonList.length +
+    final int itemCount =
+        provider.pokemonList.length +
         (_isLoadingMore && !isSearchActive ? 3 : 0) +
         (isSearchActive ? 1 : 0); // Add 1 for the footer when search is active
 
@@ -1245,15 +1309,19 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
       padding: const EdgeInsets.all(16.0),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: selectedPokemon.isNotEmpty
-              ? (widget.player == 1 ? Colors.pink : Colors.cyan)
-              : Colors.grey,
+          backgroundColor:
+              selectedPokemon.isNotEmpty
+                  ? (widget.player == 1 ? Colors.pink : Colors.cyan)
+                  : Colors.grey,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
-        onPressed: selectedPokemon.isEmpty || isLoading
-            ? null
-            : () => _continueToNextStep(),
+        onPressed:
+            selectedPokemon.isEmpty || isLoading
+                ? null
+                : () => _continueToNextStep(),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1304,7 +1372,8 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
   // The remaining methods stay the same
   Future<void> _selectPokemon(String name) async {
     // Don't allow selection if we've reached the max, or if this pokemon is already being loaded
-    if (selectedPokemon.length >= maxSelection || loadingPokemon.contains(name)) return;
+    if (selectedPokemon.length >= maxSelection || loadingPokemon.contains(name))
+      return;
 
     // Add to loading set to prevent double-selection
     setState(() {
@@ -1313,8 +1382,10 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
     });
 
     try {
-      final pokemon = await Provider.of<PokemonProvider>(context, listen: false)
-          .getPokemonDetails(name);
+      final pokemon = await Provider.of<PokemonProvider>(
+        context,
+        listen: false,
+      ).getPokemonDetails(name);
 
       // Check again that we haven't exceeded max selection (in case of multiple parallel requests)
       if (selectedPokemon.length < maxSelection) {
@@ -1323,9 +1394,9 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load Pokémon: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load Pokémon: $e')));
     } finally {
       setState(() {
         loadingPokemon.remove(name);
@@ -1340,33 +1411,239 @@ class PokemonSelectionScreenState extends State<PokemonSelectionScreen> {
 
     if (widget.player == 1) {
       // Player 1 is done selecting, move to Player 2 selection
-      Provider.of<BattleProvider>(context, listen: false)
-          .setPlayer1Pokemon(List.from(selectedPokemon));
+      Provider.of<BattleProvider>(
+        context,
+        listen: false,
+      ).setPlayer1Pokemon(List.from(selectedPokemon));
 
       // Reset search query when moving to Player 2
-      final pokemonProvider = Provider.of<PokemonProvider>(context, listen: false);
+      final pokemonProvider = Provider.of<PokemonProvider>(
+        context,
+        listen: false,
+      );
       pokemonProvider.setSearchQuery('');
 
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) {
-            // Clear the search controller in the new screen
             return const PokemonSelectionScreen(player: 2);
           },
         ),
       );
     } else {
-      // Player 2 is done selecting, start battle
-      Provider.of<BattleProvider>(context, listen: false)
-          .setPlayer2Pokemon(List.from(selectedPokemon));
+      // Player 2 is done selecting, start coin flip to determine who goes first
+      Provider.of<BattleProvider>(
+        context,
+        listen: false,
+      ).setPlayer2Pokemon(List.from(selectedPokemon));
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const BattleScreen()),
-            (route) => route.isFirst,
+        MaterialPageRoute(builder: (context) => const CoinFlipScreen()),
+        (route) => route.isFirst,
       );
     }
+  }
+}
+
+class CoinFlipScreen extends StatefulWidget {
+  const CoinFlipScreen({super.key});
+
+  @override
+  State<CoinFlipScreen> createState() => _CoinFlipScreenState();
+}
+
+class _CoinFlipScreenState extends State<CoinFlipScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  bool _isFlipping = true;
+  int _winner = 1; // Default winner (will be randomized)
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Create animation controller
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    // Create a curved animation for the coin flip
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+
+    // Start the animation
+    _controller.repeat();
+
+    // Randomly determine who starts after some time
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      // Randomly choose player 1 or 2
+      _winner = Random().nextInt(2) + 1; // 1 or 2
+
+      // Stop the animation
+      _controller.stop();
+
+      // Update state
+      setState(() {
+        _isFlipping = false;
+      });
+
+      // Set the first player in the battle provider
+      Provider.of<BattleProvider>(
+        context,
+        listen: false,
+      ).setFirstPlayer(_winner);
+
+      // Navigate to battle screen after showing result
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BattleScreen()),
+        );
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.pink.shade100, Colors.cyan.shade100],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Flipping coin to decide who goes first...',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+
+                // Coin animation
+                _isFlipping ? _buildFlippingCoin() : _buildResultDisplay(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFlippingCoin() {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform(
+          alignment: Alignment.center,
+          transform:
+              Matrix4.identity()
+                ..setEntry(3, 2, 0.001) // Perspective
+                ..rotateX(
+                  _controller.value * 10 * pi,
+                ), // Flip on X axis multiple times
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _controller.value % 1 > 0.5 ? Colors.pink : Colors.cyan,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+              border: Border.all(color: Colors.white, width: 3),
+            ),
+            child: Center(
+              child:
+                  _controller.value % 1 > 0.5
+                      ? const Text(
+                        'P1',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                      : const Text(
+                        'P2',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildResultDisplay() {
+    final Color winnerColor = _winner == 1 ? Colors.pink : Colors.cyan;
+
+    return Column(
+      children: [
+        Container(
+          width: 150,
+          height: 150,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: winnerColor,
+            border: Border.all(color: Colors.white, width: 5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              'P$_winner',
+              style: const TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+        const SizedBox(height: 30),
+        Text(
+          'Player $_winner goes first!',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: winnerColor,
+          ),
+        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.5, end: 0),
+      ],
+    );
   }
 }
 
@@ -1424,22 +1701,33 @@ class PokemonCard extends StatelessWidget {
 
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center, // Added for better centering
+                crossAxisAlignment:
+                    CrossAxisAlignment.center, // Added for better centering
                 children: [
-                  Center( // Added explicit Center widget
+                  Center(
+                    // Added explicit Center widget
                     child: Container(
                       height: 80,
                       width: 80,
                       alignment: Alignment.center, // Ensure alignment
-                      child: isLoading
-                          ? _buildShimmerPlaceholder()
-                          : CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        placeholder: (context, url) => _buildShimmerPlaceholder(),
-                        errorWidget: (context, url, error) =>
-                        const Icon(Icons.catching_pokemon, size: 40, color: Colors.red),
-                        fit: BoxFit.contain, // Use contain to maintain aspect ratio
-                      ),
+                      child:
+                          isLoading
+                              ? _buildShimmerPlaceholder()
+                              : CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                placeholder:
+                                    (context, url) =>
+                                        _buildShimmerPlaceholder(),
+                                errorWidget:
+                                    (context, url, error) => const Icon(
+                                      Icons.catching_pokemon,
+                                      size: 40,
+                                      color: Colors.red,
+                                    ),
+                                fit:
+                                    BoxFit
+                                        .contain, // Use contain to maintain aspect ratio
+                              ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1451,7 +1739,10 @@ class PokemonCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: player == 1 ? Colors.pink.shade700 : Colors.cyan.shade700,
+                        color:
+                            player == 1
+                                ? Colors.pink.shade700
+                                : Colors.cyan.shade700,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1507,7 +1798,9 @@ class BattleScreenState extends State<BattleScreen> {
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 5));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 5),
+    );
 
     // Reset battle when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1543,10 +1836,7 @@ class BattleScreenState extends State<BattleScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.pink.shade50,
-                  Colors.cyan.shade50,
-                ],
+                colors: [Colors.pink.shade50, Colors.cyan.shade50],
               ),
             ),
             child: SafeArea(
@@ -1560,7 +1850,9 @@ class BattleScreenState extends State<BattleScreen> {
                         child: PokemonBattleView(
                           pokemon: player2Pokemon,
                           isOpponent: true,
-                          isActive: battleProvider.currentTurn == 2 && !battleProvider.gameOver,
+                          isActive:
+                              battleProvider.currentTurn == 2 &&
+                              !battleProvider.gameOver,
                         ),
                       ),
 
@@ -1574,36 +1866,46 @@ class BattleScreenState extends State<BattleScreen> {
                               // Turn indicator
                               if (!battleProvider.gameOver)
                                 Container(
-                                  padding: const EdgeInsets.all(12),
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  decoration: BoxDecoration(
-                                    color: battleProvider.currentTurn == 1
-                                        ? Colors.pink.shade100
-                                        : Colors.cyan.shade100,
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.3),
-                                        blurRadius: 5,
-                                        offset: const Offset(0, 2),
+                                      padding: const EdgeInsets.all(12),
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            battleProvider.currentTurn == 1
+                                                ? Colors.pink.shade100
+                                                : Colors.cyan.shade100,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.grey.withOpacity(0.3),
+                                            blurRadius: 5,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    'Player ${battleProvider.currentTurn}\'s Turn',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: battleProvider.currentTurn == 1
-                                          ? Colors.pink.shade700
-                                          : Colors.cyan.shade700,
-                                    ),
-                                  ),
-                                ).animate()
+                                      child: Text(
+                                        'Player ${battleProvider.currentTurn}\'s Turn',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              battleProvider.currentTurn == 1
+                                                  ? Colors.pink.shade700
+                                                  : Colors.cyan.shade700,
+                                        ),
+                                      ),
+                                    )
+                                    .animate()
                                     .fadeIn()
                                     .then()
-                                    .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                                    .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+                                    .animate(
+                                      onPlay:
+                                          (controller) =>
+                                              controller.repeat(reverse: true),
+                                    )
+                                    .scale(
+                                      begin: const Offset(1, 1),
+                                      end: const Offset(1.05, 1.05),
+                                    ),
 
                               // Battle log
                               Container(
@@ -1612,7 +1914,9 @@ class BattleScreenState extends State<BattleScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
                                 child: SingleChildScrollView(
                                   child: Text(
@@ -1634,32 +1938,47 @@ class BattleScreenState extends State<BattleScreen> {
                         child: PokemonBattleView(
                           pokemon: player1Pokemon,
                           isOpponent: false,
-                          isActive: battleProvider.currentTurn == 1 && !battleProvider.gameOver,
+                          isActive:
+                              battleProvider.currentTurn == 1 &&
+                              !battleProvider.gameOver,
                         ),
                       ),
 
                       // Moves for active player
+                      // Moves for active player
                       if (!battleProvider.gameOver)
                         Container(
-                          height: 100,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          color: battleProvider.currentTurn == 1
-                              ? Colors.pink.shade50
-                              : Colors.cyan.shade50,
+                          height:
+                              120, // Increased height to accommodate taller buttons
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          color:
+                              battleProvider.currentTurn == 1
+                                  ? Colors.pink.shade50
+                                  : Colors.cyan.shade50,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
-                            children: (battleProvider.currentTurn == 1
-                                ? player1Pokemon.moves
-                                : player2Pokemon.moves)
-                                .map((move) => MoveButton(
-                              move: move,
-                              onPressed: battleProvider.isProcessingMove
-                                  ? null  // Disable button while processing a move
-                                  : () => battleProvider.useMove(move),
-                              playerTurn: battleProvider.currentTurn,
-                              isProcessing: battleProvider.isProcessingMove,
-                            ))
-                                .toList(),
+                            children:
+                                (battleProvider.currentTurn == 1
+                                        ? player1Pokemon.moves
+                                        : player2Pokemon.moves)
+                                    .map(
+                                      (move) => MoveButton(
+                                        move: move,
+                                        onPressed:
+                                            battleProvider.isProcessingMove
+                                                ? null // Disable button while processing a move
+                                                : () => battleProvider.useMove(
+                                                  move,
+                                                ),
+                                        playerTurn: battleProvider.currentTurn,
+                                        isProcessing:
+                                            battleProvider.isProcessingMove,
+                                      ),
+                                    )
+                                    .toList(),
                           ),
                         ),
 
@@ -1674,9 +1993,10 @@ class BattleScreenState extends State<BattleScreen> {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: battleProvider.winner == 1
-                                      ? Colors.pink.shade700
-                                      : Colors.cyan.shade700,
+                                  color:
+                                      battleProvider.winner == 1
+                                          ? Colors.pink.shade700
+                                          : Colors.cyan.shade700,
                                 ),
                               ).animate().scale(),
                               const SizedBox(height: 16),
@@ -1684,7 +2004,8 @@ class BattleScreenState extends State<BattleScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   ElevatedButton.icon(
-                                    onPressed: () => battleProvider.resetBattle(),
+                                    onPressed:
+                                        () => battleProvider.resetBattle(),
                                     icon: const Icon(Icons.replay),
                                     label: const Text('Rematch'),
                                     style: ElevatedButton.styleFrom(
@@ -1696,8 +2017,10 @@ class BattleScreenState extends State<BattleScreen> {
                                   ElevatedButton.icon(
                                     onPressed: () {
                                       Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(builder: (_) => const HomeScreen()),
-                                            (route) => false,
+                                        MaterialPageRoute(
+                                          builder: (_) => const HomeScreen(),
+                                        ),
+                                        (route) => false,
                                       );
                                     },
                                     icon: const Icon(Icons.home),
@@ -1754,32 +2077,34 @@ class PokemonBattleView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isOpponent
-            ? Colors.cyan.withOpacity(0.1)
-            : Colors.pink.withOpacity(0.1),
+        color:
+            isOpponent
+                ? Colors.cyan.withOpacity(0.1)
+                : Colors.pink.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
-        border: isActive
-            ? Border.all(
-          color: isOpponent ? Colors.cyan : Colors.pink,
-          width: 2,
-        )
-            : null,
+        border:
+            isActive
+                ? Border.all(
+                  color: isOpponent ? Colors.cyan : Colors.pink,
+                  width: 2,
+                )
+                : null,
       ),
       padding: const EdgeInsets.all(8),
       child: Row(
         children: [
           // Pokemon image
           Hero(
-            tag: 'pokemon_${pokemon.id}_${isOpponent ? 2 : 1}',
-            child: CachedNetworkImage(
-              imageUrl: pokemon.imageUrl,
-              height: 100,
-              placeholder: (_, __) => const CircularProgressIndicator(),
-              errorWidget: (_, __, ___) => const Icon(Icons.error),
-            ),
-          ).animate(
-            target: isActive ? 1 : 0,
-          ).shimmer(duration: 1000.ms, delay: 500.ms),
+                tag: 'pokemon_${pokemon.id}_${isOpponent ? 2 : 1}',
+                child: CachedNetworkImage(
+                  imageUrl: pokemon.imageUrl,
+                  height: 100,
+                  placeholder: (_, __) => const CircularProgressIndicator(),
+                  errorWidget: (_, __, ___) => const Icon(Icons.error),
+                ),
+              )
+              .animate(target: isActive ? 1 : 0)
+              .shimmer(duration: 1000.ms, delay: 500.ms),
 
           const SizedBox(width: 12),
 
@@ -1795,7 +2120,10 @@ class PokemonBattleView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isOpponent ? Colors.cyan.shade700 : Colors.pink.shade700,
+                        color:
+                            isOpponent
+                                ? Colors.cyan.shade700
+                                : Colors.pink.shade700,
                       ),
                     ),
                     const Spacer(),
@@ -1804,11 +2132,12 @@ class PokemonBattleView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: pokemon.currentHp < pokemon.hp * 0.3
-                            ? Colors.red
-                            : pokemon.currentHp < pokemon.hp * 0.6
-                            ? Colors.orange
-                            : Colors.green,
+                        color:
+                            pokemon.currentHp < pokemon.hp * 0.3
+                                ? Colors.red
+                                : pokemon.currentHp < pokemon.hp * 0.6
+                                ? Colors.orange
+                                : Colors.green,
                       ),
                     ),
                   ],
@@ -1826,11 +2155,12 @@ class PokemonBattleView extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: pokemon.currentHp / pokemon.hp,
                     backgroundColor: Colors.grey.shade300,
-                    color: pokemon.currentHp < pokemon.hp * 0.3
-                        ? Colors.red
-                        : pokemon.currentHp < pokemon.hp * 0.6
-                        ? Colors.orange
-                        : Colors.green,
+                    color:
+                        pokemon.currentHp < pokemon.hp * 0.3
+                            ? Colors.red
+                            : pokemon.currentHp < pokemon.hp * 0.6
+                            ? Colors.orange
+                            : Colors.green,
                     minHeight: 10,
                   ),
                 ),
@@ -1859,76 +2189,85 @@ class MoveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate available width based on screen size
-    final screenWidth = MediaQuery.of(context).size.width;
-    // Calculate button width - 4 buttons + padding
-    final buttonWidth = (screenWidth - 48) / 4;
-
-    return Container(
-      width: buttonWidth,
-      height: 80, // Fixed height for all buttons
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: Stack(
-        children: [
-          ElevatedButton(
-            onPressed: onPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: playerTurn == 1 ? Colors.pink : Colors.cyan,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.all(8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              minimumSize: Size(buttonWidth, 80), // Enforce minimum size
-              maximumSize: Size(buttonWidth, 80), // Enforce maximum size
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      move.formattedName,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Power: ${move.power}',
-                  style: const TextStyle(fontSize: 11),
-                ),
-                Text(
-                  'Type: ${move.type}',
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ],
-            ),
-          ),
-          if (isProcessing)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Container(
+        width: 105, // Fixed width
+        height: 100, // Significantly increased height to fit move names
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        child: Stack(
+          children: [
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: playerTurn == 1 ? Colors.pink : Colors.cyan,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 8,
+                ), // More vertical padding
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Center(
-                  child: SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+                minimumSize: const Size(
+                  105,
+                  100,
+                ), // Enforce minimum size with more height
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    flex: 4, // Give even more space to the move name
+                    child: Center(
+                      child: Text(
+                        move.formattedName,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13, // Slightly larger font
+                          fontWeight: FontWeight.bold,
+                          height: 1.2, // Tighter line height for more text
+                        ),
+                        maxLines: 3, // Allow up to 3 lines for move names
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 8, thickness: 1, color: Colors.white24),
+                  Text(
+                    'Power: ${move.power}',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Type: ${move.type}',
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+              ),
+            ),
+            if (isProcessing)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
